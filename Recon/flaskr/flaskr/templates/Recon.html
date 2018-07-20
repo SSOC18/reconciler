@@ -24,20 +24,8 @@
     {% endwith %}
     
     
-    <h3>{{H2}}</h3>
-    {% for fn_i in fn_all %}
-        <li>
-            <a href="http://ssoc18.teamshadi.net:5000/DF?fn_sel={{fn_i}}">{{fn_i}}</a>
-            {% if fn_sel==fn_i %}
-            (selected)
-            {% endif %}
-        </li>
-    {% endfor %}
+    <h3><a href="http://ssoc18.teamshadi.net:5000/listprev">{{H2}}</a></h3>
    
-    <h2><a href="http://ssoc18.teamshadi.net:5000">{{Uploadnew}}</a></h2>
-    
-    <h2>{{Title}}</h2>
-    {{data | safe}}
     
     
 

@@ -40,24 +40,35 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# def make_clickable(val): #turns the file_name into links, upon clicking sends to recon.html where data is displayed accordingly
+def make_clickable(val): #turns the file_name into links, upon clicking sends to recon.html where data is displayed accordingly
     
-#     return redirect(request.url + val)
-#     #return '<a target="_blank" href="recon.html">{}</a>'.format(val, val)
+    return redirect(request.url + val)
+    #return '<a target="_blank" href="recon.html">{}</a>'.format(val, val)
 
 
 # from https://stackoverflow.com/a/3207973/4126114
 from os import listdir
 from os.path import isfile, join
-  
+@app.route('/listfiles', methods=['GET'])
+
+def listfiles():
+    mypath = UPLOAD_FOLDER
+    fn_all = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    fn_all = [f.replace('.csv','').replace('-f1','').replace('-f2','') for f in fn_all]
+    fn_all = list(set(fn_all))
+    fn_all.sort()
+    return render_template("DF.html", fn_all=fn_all, fn_sel=request.args.get('fn_sel'))
+
+
+    
+            
+    
     
 @app.route('/', methods=['GET', 'POST'])
 def Recon():
 
     if request.method == 'GET':
-        
-        return render_template("Recon.html",H2="View Previous Reconciliations" )
-        
+        return render_template("DF.html")
         
     # check if the post request has the file part
     if 'F1' not in request.files:
@@ -75,10 +86,17 @@ def Recon():
 
     filename1 = secure_filename(file1.filename)
     Time= timestamp()
+    stamps = ['']
+    stamps.append(Time)
+    fileframe = pd.DataFrame(columns=stamps)
+
     FT1= Time + '-f1.csv'
     filename1b = os.path.join(app.config['UPLOAD_FOLDER'], FT1)
     file1.save(filename1b)
     dfrc1 = pd.read_csv(filename1b)
+
+
+
 
     # check if the post request has the file part
     if 'F2' not in request.files:
@@ -111,11 +129,19 @@ def Recon():
             flash("File 2 does not contain the appropriate data. Columns must contain 'symbol' and 'position'.")
             return redirect(request.url)
 
-    fn_sel = Time
-    return redirect("http://ssoc18.teamshadi.net:5000/ReconView?fn_sel=" + fn_sel)
-  
 
-@app.route('/ReconView', methods=['GET', 'POST'])
+    DF=dfrc1.merge(dfrc2, left_on='symbol', right_on='symbol', how='outer')
+    DF['diff']=DF['position_x']-DF['position_y']
+
+    x = pd.DataFrame(DF)
+    mypath = UPLOAD_FOLDER
+    fn_all = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    fn_all = [f.replace('.csv','').replace('-f1','').replace('-f2','') for f in fn_all]
+    fn_all = list(set(fn_all))
+    fn_all.sort()
+    return render_template("DF.html",H2="View Previous Reconciliations", Title="Current Reconciliation", data=x.to_html(), fn_all=fn_all, fn_sel=request.args.get('fn_sel') )
+
+@app.route('/DF', methods=['GET', 'POST'])
 def Redux():
     num = request.args.get('fn_sel')
     mypath = UPLOAD_FOLDER
@@ -132,19 +158,10 @@ def Redux():
     DF=rc1.merge(rc2, left_on='symbol', right_on='symbol', how='outer')
     DF['diff']=DF['position_x']-DF['position_y']
     x = pd.DataFrame(DF)
-    mypath = UPLOAD_FOLDER
-    
-    return render_template("ReconView.html", Title="Current Reconciliation", data=x.to_html(), Uploadnew="Upload new reconciliation", H2="View Previous Reconciliations")
+    return render_template("DF.html", Title="Current Reconciliation", data=x.to_html())
 
-@app.route('/listprev', methods=['GET', 'POST'])
-def listfiles():
-    mypath = UPLOAD_FOLDER
-    fn_all = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-    fn_all = [f.replace('.csv','').replace('-f1','').replace('-f2','') for f in fn_all]
-    fn_all = list(set(fn_all))
-    fn_all.sort()
-    return render_template("listprev.html", fn_all=fn_all, fn_sel=request.args.get('fn_sel'))
-                           
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()
