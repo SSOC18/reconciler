@@ -18,6 +18,15 @@ from matplotlib import style
 import datetime
 import urllib.parse as urlparse
 from urllib.parse import urlencode
+import psycopg2 as pg
+import pandas.io.sql as psql
+from flask import Flask
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy.orm import mapper, sessionmaker
+from sqlalchemy import Column, Integer
+from sqlalchemy.dialects.postgresql import insert
+import logging
+logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
 
 SESSION_TYPE = 'filesystem'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +39,25 @@ app.secret_key = "super secret key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
+class securities(object):
+    pass
+ 
+
+# def loadSession():
+#     """"""    
+    
+#     engine = create_engine('postgresql:/fatme:upBH2UtS@localhost/mf_dummy', echo=True)
+ 
+#     metadata = MetaData(engine)
+#     sec = Table('securities', metadata, 
+#                       Column("symbol", Integer, primary_key=True), Column("position", Integer, primary_key=True))
+#     mapper(Securities, sec)
+ 
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
+#     return session
+ 
+
 
 def timestamp():
     ts = time.time()
@@ -40,10 +68,6 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# def make_clickable(val): #turns the file_name into links, upon clicking sends to recon.html where data is displayed accordingly
-    
-#     return redirect(request.url + val)
-#     #return '<a target="_blank" href="recon.html">{}</a>'.format(val, val)
 
 
 # from https://stackoverflow.com/a/3207973/4126114
@@ -56,7 +80,7 @@ def Recon():
 
     if request.method == 'GET':
         
-        return render_template("Recon.html",H2="View Previous Reconciliations" )
+        return render_template("Recon.html",H2="View Previous Reconciliations", H3="Upload from Database" )
         
         
     # check if the post request has the file part
@@ -144,9 +168,88 @@ def listfiles():
     fn_all = list(set(fn_all))
     fn_all.sort()
     return render_template("listprev.html", fn_all=fn_all, fn_sel=request.args.get('fn_sel'))
+
+@app.route ('/uploadfromdb', methods=['GET','POST'])
+def dbupload():
+    
+    if request.method == 'GET':
+        
+        return render_template("uploadfromdb.html",H2="View Previous Reconciliations", H3="Upload files" )
+        
+        
+    # check if the post request has the file part
+    if 'F1' not in request.files:
+        flash('No Selected file 1')
+        return redirect(request.url)
+    file1 = request.files['F1']
+
+    # if user does not select file, browser also
+    # submit a empty part without filename
+
+    if not (file1 and allowed_file(file1.filename)):
+        flash("something wrong with file 1")
+        return redirect(request.url)
+
+
+    filename1 = secure_filename(file1.filename)
+    Time= timestamp()
+    FT1= Time + '-f1.csv'
+    filename1b = os.path.join(app.config['UPLOAD_FOLDER'], FT1)
+    file1.save(filename1b)
+    dfrc1 = pd.read_csv(filename1b)
+
+    
+#     if 'Table' not in request.headers:
+#         flash('No Selected Table')
+#         return redirect(request.url)
+    Tablename = request.form['Table']
+
+    # if user does not select file, browser also
+    # submit a empty part without filename
+
+    
+    
+#     if 'Table' not in database
+#         flash("Table not in database")
+#         return redirect(request.url)
+
+    tablename=Tablename
+#     engine = create_engine('postgresql:/fatme:upBH2UtS@localhost/mf_dummy', echo=True)
+    engine = create_engine("postgres:http://ssoc18.teamshadi.net:8000/mf_dummy", echo=True)
+    metadata = MetaData(engine)
+    sec = Table('securities', metadata, 
+                      Column("symbol", Integer, primary_key=True), Column("position", Integer, primary_key=True))
+    mapper(Securities, sec)
+    connection = engine.connect()
+    table=pd.read_sql_table(tablename, connection, schema=None, index_col=None, coerce_float=True, parse_dates=None, columns=['symbol','position'], chunksize=None)
+    fileT2= Time + '-f2.csv'
+    newfile=table.to_csv('newfile.csv')
+    filename2b = os.path.join(app.config['UPLOAD_FOLDER'], fileT2)
+    newfile.save(filename2b)
+    dfrc2 = pd.read_csv(filename2b)
+
+    #This section checks if any or both files have the appropriate columns and flashes a messages accordingly
+    if not (({'symbol', 'position'}.issubset(dfrc1.columns))or({'symbol', 'position'}.issubset(dfrc2.columns))):
+        flash("File 1 and File 2 do not contain the appropriate data. Columns must contain 'symbol' and 'position'.")
+        return redirect(request.url)
+    else:
+        if not {'symbol', 'position'}.issubset(dfrc1.columns):
+            flash("File 1 does not contain the appropriate data. Columns must contain 'symbol' and 'position'.")
+            return redirect(request.url)
+        if not {'symbol', 'position'}.issubset(dfrc2.columns):
+            flash("File 2 does not contain the appropriate data. Columns must contain 'symbol' and 'position'.")
+            return redirect(request.url)
+
+    fn_sel = Time
+    return redirect("http://ssoc18.teamshadi.net:5000/ReconView?fn_sel=" + fn_sel)
+    
+    
                            
 if __name__ == '__main__':
     app.debug = True
+    session = loadSession()
+    res = session.query(Securities).all()
+    res[1].title
     app.run()
 
 

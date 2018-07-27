@@ -1,14 +1,14 @@
 
 <!doctype html>
 <head>
-    <title>Upload new File</title>
+    <title>Upload From Database</title>
 </head>
 <body>
     <h1>Upload two CSV files for reconciliation</h1>
     <form method="post" enctype="multipart/form-data" action="">
       <p>File1: <input type=file name='F1'> <!-- name=F1 instead of id=F1 -->
-      <p>File2: <input type=file name='F2'>
-         <input type=submit value=Upload>
+      <p>File2 type the name of the table from the database: <input type=text name='Table'> 
+         <input type=submit value=Confirm>
     </form>
     
     <!-- added section for flashed messages -->
@@ -24,19 +24,9 @@
     {% endwith %}
     
     
-    <h3>{{H2}}</h3>
-    {% for fn_i in fn_all %}
-        <li>
-            <a href="http://ssoc18.teamshadi.net:5000/DF?fn_sel={{fn_i}}">{{fn_i}}</a>
-            {% if fn_sel==fn_i %}
-            (selected)
-            {% endif %}
-        </li>
-    {% endfor %}
+    <h3><a href="http://ssoc18.teamshadi.net:5000/listprev">{{H2}}</a></h3>
+    <h3><a href="http://ssoc18.teamshadi.net:5000/Recon">{{H3}}</a></h3>
    
-    
-    <h2>{{Title}}</h2>
-    {{data | safe}}
     
     
 
