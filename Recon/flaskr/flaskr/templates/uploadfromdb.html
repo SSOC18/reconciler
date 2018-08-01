@@ -7,7 +7,7 @@
     <h1>Upload two CSV files for reconciliation</h1>
     <form method="post" enctype="multipart/form-data" action="">
       <p>File1: <input type=file name='F1'> <!-- name=F1 instead of id=F1 -->
-      <p>File2 type the name of the table from the database: <input type=text name='Table'> 
+      <p>File2: Upload from the database, click confirm to upload and reconciler. </p> 
          <input type=submit value=Confirm>
     </form>
     
@@ -24,8 +24,8 @@
     {% endwith %}
     
     
-    <h3><a href="http://ssoc18.teamshadi.net:5000/listprev">{{H2}}</a></h3>
-    <h3><a href="http://ssoc18.teamshadi.net:5000/Recon">{{H3}}</a></h3>
+    <h3><a href="/listprev">{{H2}}</a></h3>
+    <h3><a href="/">{{H3}}</a></h3>
    
     
     
